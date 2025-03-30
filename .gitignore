@@ -1,0 +1,7 @@
+*~
+*.swp
+.vscode
+dist
+jotai
+node_modules
+.DS_Store
