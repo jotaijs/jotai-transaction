@@ -13,16 +13,13 @@ export interface TransactionOperation<Value = any> {
 export interface Transaction {
   id: string
   status: TransactionStatus
-  operations: Map<WritableAtom<any, any, void>, TransactionOperation>
-
-  set: <Value, Args extends unknown[]>(
-    atom: WritableAtom<Value, Args, void>,
-    value: Value,
-  ) => void
+  operations: Map<WritableAtom<any, any, void>, TransactionOperation<any>>
 
   get: <Value>(atom: Atom<Value>) => Value
+  set: <Value>(atom: WritableAtom<Value, [Value], void>, value: Value) => void
 
   _store: Store
+  _options: TransactionOptions
 }
 
 export interface TransactionOptions {

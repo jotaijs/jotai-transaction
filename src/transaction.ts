@@ -1,6 +1,9 @@
-import { Atom, WritableAtom, getDefaultStore } from 'jotai'
-import { Transaction, TransactionOptions } from './types'
+import { createStore } from 'jotai'
+import { Atom, WritableAtom, getDefaultStore } from 'jotai/vanilla'
+import { Transaction, TransactionOperation, TransactionOptions } from './types'
 import { generateId } from './utils'
+
+type Store = ReturnType<typeof createStore>
 
 export function beginTransaction(
   options: TransactionOptions = {},
@@ -8,14 +11,21 @@ export function beginTransaction(
   const store = options.store || getDefaultStore()
   const id = generateId()
 
+  const operations = new Map<
+    WritableAtom<any, any, void>,
+    TransactionOperation<any>
+  >()
+  const stagedValues = new Map<Atom<any>, any>()
+
   const transaction: Transaction = {
     id,
     status: 'pending',
-    operations: new Map(),
+    operations,
     _store: store,
+    _options: options,
 
-    set<Value, Args extends unknown[]>(
-      targetAtom: WritableAtom<Value, Args, void>,
+    set<Value>(
+      targetAtom: WritableAtom<Value, [Value], void>,
       value: Value,
     ): void {
       if (this.status !== 'pending') {
@@ -24,19 +34,33 @@ export function beginTransaction(
 
       const currentValue = store.get(targetAtom)
 
-      this.operations.set(targetAtom, {
+      const operation: TransactionOperation<Value> = {
         atom: targetAtom,
         value,
         previousValue: currentValue,
-      })
+      }
+
+      operations.set(targetAtom, operation)
+      stagedValues.set(targetAtom, value)
     },
 
     get<Value>(targetAtom: Atom<Value>): Value {
-      if (this.operations.has(targetAtom as WritableAtom<Value, any, void>)) {
-        const operation = this.operations.get(
-          targetAtom as WritableAtom<Value, any, void>,
-        )
-        return operation!.value
+      if (stagedValues.has(targetAtom)) {
+        return stagedValues.get(targetAtom)
+      }
+
+      if (isReadableAtom(targetAtom)) {
+        try {
+          const transactionGet = createTransactionGetter(store, stagedValues)
+          const options = {
+            signal: new AbortController().signal,
+            setSelf: undefined as never,
+          }
+          return targetAtom.read(transactionGet, options)
+        } catch (e) {
+          console.error(e)
+          return store.get(targetAtom)
+        }
       }
 
       return store.get(targetAtom)
@@ -51,16 +75,40 @@ export function commitTransaction(transaction: Transaction): void {
     throw new Error(`Cannot commit a transaction that is ${transaction.status}`)
   }
 
-  try {
-    const store = transaction._store
+  const store = transaction._store
+  const onCommit = transaction._options.onCommit
 
-    transaction.operations.forEach((operation) => {
-      store.set(operation.atom, operation.value)
-    })
+  try {
+    for (const operation of transaction.operations.values()) {
+      if (operation) {
+        store.set(operation.atom, operation.value)
+      }
+    }
 
     transaction.status = 'committed'
+    if (typeof onCommit === 'function') {
+      onCommit()
+    }
   } catch (error) {
-    rollbackTransaction(transaction)
+    const operationsArray = Array.from(transaction.operations.values())
+
+    for (let i = operationsArray.length - 1; i >= 0; i--) {
+      const operation = operationsArray[i]
+      if (!operation) return
+
+      try {
+        store.set(operation.atom, operation.previousValue)
+      } catch (restoreError) {
+        console.error('Error restoring value during rollback:', restoreError)
+      }
+    }
+
+    transaction.status = 'rolled-back'
+    const onRollback = transaction._options.onRollback
+    if (typeof onRollback === 'function') {
+      onRollback()
+    }
+
     throw error
   }
 }
@@ -72,5 +120,27 @@ export function rollbackTransaction(transaction: Transaction): void {
     )
   }
 
+  const onRollback = transaction._options.onRollback
+
   transaction.status = 'rolled-back'
+
+  if (typeof onRollback === 'function') {
+    onRollback()
+  }
+}
+
+function isReadableAtom(atom: any): atom is Atom<any> {
+  return typeof atom.read === 'function'
+}
+
+function createTransactionGetter(
+  store: Store,
+  stagedValues: Map<Atom<any>, any>,
+): <Value>(atom: Atom<Value>) => Value {
+  return function _transactionGet<Value>(atom: Atom<Value>): Value {
+    if (stagedValues.has(atom)) {
+      return stagedValues.get(atom)
+    }
+    return store.get(atom)
+  }
 }
