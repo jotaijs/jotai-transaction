@@ -1,11 +1,11 @@
-import { createStore } from 'jotai'
-import type { Atom, WritableAtom } from 'jotai'
+import { createStore } from 'jotai/vanilla'
+import type { Atom, WritableAtom } from 'jotai/vanilla'
 
-type Store = ReturnType<typeof createStore>
+export type Store = ReturnType<typeof createStore>
 export type TransactionStatus = 'pending' | 'committed' | 'rolled-back'
 
-export interface TransactionOperation<Value = any> {
-  atom: WritableAtom<Value, any, void>
+export interface TransactionOperation<Value, Args extends unknown[] = [Value]> {
+  atom: WritableAtom<Value, Args, void>
   value: Value
   previousValue: Value
 }
@@ -13,10 +13,16 @@ export interface TransactionOperation<Value = any> {
 export interface Transaction {
   id: string
   status: TransactionStatus
-  operations: Map<WritableAtom<any, any, void>, TransactionOperation<any>>
+  operations: Map<
+    WritableAtom<unknown, unknown[], void>,
+    TransactionOperation<unknown, unknown[]>
+  >
 
   get: <Value>(atom: Atom<Value>) => Value
-  set: <Value>(atom: WritableAtom<Value, [Value], void>, value: Value) => void
+  set: <Value, Args extends unknown[] = [Value]>(
+    atom: WritableAtom<Value, Args, void>,
+    ...args: Args
+  ) => void
 
   _store: Store
   _options: TransactionOptions

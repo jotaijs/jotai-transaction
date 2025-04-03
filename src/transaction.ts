@@ -1,9 +1,11 @@
-import { createStore } from 'jotai'
 import { Atom, WritableAtom, getDefaultStore } from 'jotai/vanilla'
-import { Transaction, TransactionOperation, TransactionOptions } from './types'
+import {
+  Store,
+  Transaction,
+  TransactionOperation,
+  TransactionOptions,
+} from './types'
 import { generateId } from './utils'
-
-type Store = ReturnType<typeof createStore>
 
 export function beginTransaction(
   options: TransactionOptions = {},
@@ -24,23 +26,27 @@ export function beginTransaction(
     _store: store,
     _options: options,
 
-    set<Value>(
-      targetAtom: WritableAtom<Value, [Value], void>,
-      value: Value,
+    set<Value, Args extends unknown[] = [Value]>(
+      targetAtom: WritableAtom<Value, Args, void>,
+      ...args: Args
     ): void {
       if (this.status !== 'pending') {
         throw new Error(`Cannot modify a transaction that is ${this.status}`)
       }
 
       const currentValue = store.get(targetAtom)
+      const value = args[0] as Value
 
-      const operation: TransactionOperation<Value> = {
+      const operation: TransactionOperation<Value, Args> = {
         atom: targetAtom,
         value,
         previousValue: currentValue,
       }
 
-      operations.set(targetAtom, operation)
+      operations.set(
+        targetAtom as WritableAtom<unknown, unknown[], void>,
+        operation as TransactionOperation<unknown, unknown[]>,
+      )
       stagedValues.set(targetAtom, value)
     },
 
@@ -49,7 +55,7 @@ export function beginTransaction(
         return stagedValues.get(targetAtom)
       }
 
-      if (isReadableAtom(targetAtom)) {
+      if (hasCustomRead(targetAtom)) {
         try {
           const transactionGet = createTransactionGetter(store, stagedValues)
           const options = {
@@ -94,7 +100,7 @@ export function commitTransaction(transaction: Transaction): void {
 
     for (let i = operationsArray.length - 1; i >= 0; i--) {
       const operation = operationsArray[i]
-      if (!operation) return
+      if (!operation) continue
 
       try {
         store.set(operation.atom, operation.previousValue)
@@ -129,17 +135,17 @@ export function rollbackTransaction(transaction: Transaction): void {
   }
 }
 
-function isReadableAtom(atom: any): atom is Atom<any> {
+function hasCustomRead<Value>(atom: Atom<Value>): boolean {
   return typeof atom.read === 'function'
 }
 
 function createTransactionGetter(
   store: Store,
-  stagedValues: Map<Atom<any>, any>,
+  stagedValues: Map<Atom<unknown>, unknown>,
 ): <Value>(atom: Atom<Value>) => Value {
   return function _transactionGet<Value>(atom: Atom<Value>): Value {
     if (stagedValues.has(atom)) {
-      return stagedValues.get(atom)
+      return stagedValues.get(atom) as Value
     }
     return store.get(atom)
   }
