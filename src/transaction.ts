@@ -14,8 +14,8 @@ export function beginTransaction(
   const id = generateId()
 
   const operations = new Map<
-    WritableAtom<any, any, void>,
-    TransactionOperation<any>
+    WritableAtom<unknown, unknown[], void>,
+    TransactionOperation<unknown, unknown[]>
   >()
   const stagedValues = new Map<Atom<any>, any>()
 
@@ -51,8 +51,8 @@ export function beginTransaction(
     },
 
     get<Value>(targetAtom: Atom<Value>): Value {
-      if (stagedValues.has(targetAtom)) {
-        return stagedValues.get(targetAtom)
+      if (getStagedValueIfPresent(targetAtom, stagedValues)) {
+        return getStagedValueIfPresent(targetAtom, stagedValues) as Value
       }
 
       if (hasCustomRead(targetAtom)) {
@@ -144,9 +144,16 @@ function createTransactionGetter(
   stagedValues: Map<Atom<unknown>, unknown>,
 ): <Value>(atom: Atom<Value>) => Value {
   return function _transactionGet<Value>(atom: Atom<Value>): Value {
-    if (stagedValues.has(atom)) {
-      return stagedValues.get(atom) as Value
-    }
-    return store.get(atom)
+    return getStagedValueIfPresent(atom, stagedValues) ?? store.get(atom)
   }
+}
+
+function getStagedValueIfPresent<Value>(
+  atom: Atom<Value>,
+  stagedValues: Map<Atom<unknown>, unknown>,
+): Value | undefined {
+  if (stagedValues.has(atom)) {
+    return stagedValues.get(atom) as Value
+  }
+  return undefined
 }
