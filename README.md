@@ -47,32 +47,6 @@ function MyComponent() {
     commitTransaction(transaction);
   };
 
-  const handleOptimisticUpdate = async () => {
-    // Start a transaction for an optimistic UI update
-    const transaction = beginTransaction();
-    
-    // Stage optimistic changes
-    transaction.set(countAtom, count + 1);
-    transaction.set(messageAtom, `Optimistically updated!`);
-    
-    // Commit the changes (UI updates immediately)
-    commitTransaction(transaction);
-    
-    try {
-      // Attempt the actual API update
-      await saveToApi(count + 1);
-    } catch (error) {
-      // If the API call fails, we can create a new transaction to revert
-      const revertTransaction = beginTransaction();
-      revertTransaction.set(countAtom, count);
-      revertTransaction.set(messageAtom, message);
-      commitTransaction(revertTransaction);
-      
-      // Show error to user
-      alert('Failed to save. Changes reverted.');
-    }
-  };
-  
   // ...
 }
 ```
@@ -123,9 +97,6 @@ function FormComponent() {
     } catch (error) {
       // Roll back on error
       rollbackTransaction(transaction);
-      
-      // Show error
-      alert(error.message);
     }
   };
   
@@ -209,8 +180,6 @@ import { beginTransaction, commitTransaction } from 'jotai-transaction';
 
 // Create a custom store
 const myStore = createStore();
-
-// Create a transaction for the custom store
 const transaction = beginTransaction({ store: myStore });
 
 // ... use the transaction with atoms from this store
