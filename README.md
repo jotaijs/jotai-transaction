@@ -2,10 +2,6 @@
 
 Atomic transaction support for Jotai state updates.
 
-[![NPM Version](https://img.shields.io/npm/v/jotai-transaction.svg?style=flat)](https://www.npmjs.com/package/jotai-transaction)
-[![size](https://img.shields.io/bundlephobia/minzip/jotai-transaction)](https://bundlephobia.com/package/jotai-transaction)
-[![License](https://img.shields.io/npm/l/jotai-transaction.svg?style=flat)](https://github.com/jotaijs/jotai-transaction/blob/main/LICENSE)
-
 ## Overview
 
 `jotai-transaction` extends Jotai's capabilities to support transactional updates across multiple atoms. This allows you to:
