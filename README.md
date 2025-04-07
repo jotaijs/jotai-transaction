@@ -27,7 +27,6 @@ yarn add jotai-transaction
 import { atom, useAtom } from 'jotai';
 import { beginTransaction, commitTransaction, rollbackTransaction } from 'jotai-transaction';
 
-// Define your atoms
 const countAtom = atom(0);
 const messageAtom = atom('hello');
 
@@ -36,18 +35,14 @@ function MyComponent() {
   const [message, setMessage] = useAtom(messageAtom);
 
   const handleSubmit = () => {
-    // Start a transaction
     const transaction = beginTransaction();
     
     // Stage changes (these won't update the UI yet)
     transaction.set(countAtom, count + 1);
     transaction.set(messageAtom, `Updated ${count + 1} times`);
     
-    // Commit the changes as a single atomic operation
     commitTransaction(transaction);
   };
-
-  // ...
 }
 ```
 
@@ -57,7 +52,6 @@ function MyComponent() {
 import { atom, useAtom } from 'jotai';
 import { useTransaction } from 'jotai-transaction';
 
-// Define your atoms
 const formAtom = atom({ name: '', email: '', age: 0 });
 const formStatusAtom = atom('idle');
 
@@ -65,7 +59,6 @@ function FormComponent() {
   const [form, setForm] = useAtom(formAtom);
   const [status, setStatus] = useAtom(formStatusAtom);
   
-  // Create a transaction with callbacks
   const transaction = useTransaction({
     onCommit: () => console.log('Transaction committed successfully'),
     onRollback: () => console.log('Transaction rolled back')
@@ -74,28 +67,18 @@ function FormComponent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Stage form submission state
     transaction.set(formStatusAtom, 'submitting');
     transaction.set(formAtom, { ...form, name: form.name.trim() });
     
     try {
-      // Validate form
-      if (!form.email.includes('@')) {
-        throw new Error('Invalid email');
-      }
-      
-      // Commit staged changes
       commitTransaction(transaction);
       
-      // Proceed with API submission
       await submitToApi(transaction.get(formAtom));
       
-      // Update status in a new transaction
       const successTransaction = beginTransaction();
       successTransaction.set(formStatusAtom, 'success');
       commitTransaction(successTransaction);
     } catch (error) {
-      // Roll back on error
       rollbackTransaction(transaction);
     }
   };
@@ -157,10 +140,7 @@ import { beginTransaction, commitTransaction } from 'jotai-transaction';
 const countAtom = atom(0);
 const doubleAtom = atom((get) => get(countAtom) * 2);
 
-// Start a transaction
 const transaction = beginTransaction();
-
-// Stage update to count
 transaction.set(countAtom, 5);
 
 // The derived value is calculated correctly within the transaction
@@ -178,9 +158,6 @@ Transactions work with custom Jotai stores:
 import { createStore } from 'jotai';
 import { beginTransaction, commitTransaction } from 'jotai-transaction';
 
-// Create a custom store
 const myStore = createStore();
 const transaction = beginTransaction({ store: myStore });
-
-// ... use the transaction with atoms from this store
 ```
