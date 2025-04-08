@@ -1,6 +1,5 @@
 name: Publish Package to NPM
 
-
 on:
   push:
     tags:
@@ -13,7 +12,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.15.0
+          version: 8.6.0
       - uses: actions/setup-node@v3
         with:
           node-version: 20
@@ -23,6 +22,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm run build
-      - run: pnpm publish --no-git-checks
+      - run: pnpm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
