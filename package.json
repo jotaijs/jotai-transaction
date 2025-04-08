@@ -1,5 +1,5 @@
 {
-  "name": "jotai-transaction",
+  "name": "@jotaijs/jotai-transaction",
   "version": "0.1.0",
   "description": "👻 Transaction support for Jotai atom updates",
   "repository": {
