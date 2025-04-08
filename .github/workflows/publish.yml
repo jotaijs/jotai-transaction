@@ -1,6 +1,5 @@
 name: Publish Package to NPM
 
-
 on:
   push:
     tags:
@@ -11,18 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Configure Git for publishing
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git branch --track main origin/main || git checkout -b main
+          git reset --hard ${GITHUB_REF#refs/tags/}
+      
       - uses: pnpm/action-setup@v2
         with:
           version: 8.15.0
+      
       - uses: actions/setup-node@v3
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
+      
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm run build
+      
       - run: pnpm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
