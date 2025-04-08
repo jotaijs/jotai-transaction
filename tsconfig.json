@@ -5,19 +5,18 @@
     "downlevelIteration": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "allowJs": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
+    "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
       "jotai-transaction": ["./src"]
     },
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "tests"],
+  "include": ["src"],
   "exclude": ["dist"]
 }
