@@ -10,7 +10,10 @@
     "url": "https://github.com/jotaijs/jotai-transaction/issues"
   },
   "author": "Hamza Hassan",
-  "contributors": [],
+  "contributors": [
+    "Daishi Kato (https://github.com/dai-shi)",
+    "David Maskasky (https://github.com/dmaskasky)"
+  ],
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
