@@ -1,11 +1,13 @@
-name: CI
+name: Publish Package to NPM
+
 
 on:
   push:
-  pull_request:
+    tags:
+      - v*
 
 jobs:
-  test:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -15,7 +17,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
+          registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - run: npm test
+      - run: pnpm test
+      - run: pnpm run build
+      - run: pnpm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
