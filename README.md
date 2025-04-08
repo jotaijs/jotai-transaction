@@ -4,7 +4,7 @@ Atomic transaction support for Jotai state updates.
 
 ## Overview
 
-`jotai-transaction` extends Jotai's capabilities to support transactional updates across multiple atoms. This allows you to:
+`jotai-transaction` extends [Jotai](https://github.com/pmndrs/jotai)'s capabilities to support transactional updates across multiple atoms. This allows you to:
 
 - Group multiple atom updates into a single atomic operation
 - Stage changes without affecting the UI until explicitly committed
